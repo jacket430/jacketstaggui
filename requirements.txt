@@ -36,6 +36,10 @@ huggingface-hub==0.26.2
 onnxruntime==1.19.2
 onnxruntime-directml==1.19.2; platform_system == "Windows"
 
+# XMP Sidecar Generation
+lxml>=4.9.0
+send2trash>=1.8.0
+
 # FlashAttention (Florence-2, Phi-3-Vision)
 flash-attn==2.6.3; platform_system == "Linux"
 https://github.com/bdashore3/flash-attention/releases/download/v2.6.3/flash_attn-2.6.3+cu123torch2.2.2cxx11abiFALSE-cp311-cp311-win_amd64.whl; platform_system == "Windows" and python_version == "3.11"
