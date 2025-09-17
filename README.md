@@ -1,4 +1,4 @@
-# TagGUI
+# Jacket's TagGUI
 
 <img src='images/icon.png' alt='TagGUI icon' width='128'>
 
