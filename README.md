@@ -18,14 +18,14 @@ models.
 - Batch tag operations for renaming, deleting, and sorting tags
 - Advanced image list filtering
 
-## Installation
+## Installation (Out of date)
 
-The easiest way to use the application is to download the latest release from
-the [releases page](https://www.github.com/jhc13/taggui/releases).
+~~The easiest way to use the application is to download the latest release from
+the [releases page](https://www.github.com/jacket430/jacketstaggui/releases).
 Choose the appropriate file for your operating system, extract it wherever you
 want, and run the executable file inside.
 You may have to install [7-Zip](https://www.7-zip.org/download.html) to
-extract the files if you don't have it on your system.
+extract the files if you don't have it on your system.~~ Build coming soon, use manually for now or build executable yourself.
 
 - macOS users: There is no macOS release because it requires a device running
   the OS, and I do not have one. You can still install and run the program
