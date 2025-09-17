@@ -1,7 +1,8 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtGui import QFontMetrics
+from PySide6.QtWidgets import QMessageBox, QPlainTextEdit
 
 
 def get_resource_path(unbundled_resource_path: Path) -> Path:
@@ -13,6 +14,21 @@ def get_resource_path(unbundled_resource_path: Path) -> Path:
     base_path = getattr(sys, '_MEIPASS', Path(__file__).parent.parent.parent)
     resource_path = (Path(base_path) / unbundled_resource_path).resolve()
     return resource_path
+
+
+def set_text_edit_height(text_edit: QPlainTextEdit, line_count: int):
+    """
+    Set the height of a text edit to the height of a given number of lines.
+    """
+    # From https://stackoverflow.com/a/46997337.
+    document = text_edit.document()
+    font_metrics = QFontMetrics(document.defaultFont())
+    margins = text_edit.contentsMargins()
+    height = int(font_metrics.lineSpacing() * line_count
+                 + margins.top() + margins.bottom()
+                 + document.documentMargin() * 2
+                 + text_edit.frameWidth() * 2)
+    text_edit.setFixedHeight(height)
 
 
 def pluralize(word: str, count: int) -> str:

@@ -24,6 +24,11 @@ numpy==2.2.6
 # WD Tagger
 huggingface-hub==0.31.4
 onnxruntime==1.22.0
+onnxruntime-directml==1.19.2; platform_system == "Windows"
+
+# XMP Sidecar Generation
+lxml>=4.9.0
+send2trash>=1.8.0
 
 # PyTorch
 torch==2.6.0; platform_system != "Windows"

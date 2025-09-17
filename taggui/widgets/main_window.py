@@ -26,6 +26,7 @@ from widgets.auto_captioner import AutoCaptioner
 from widgets.image_list import ImageList
 from widgets.image_tags_editor import ImageTagsEditor
 from widgets.image_viewer import ImageViewer
+from widgets.xmp_sidecar_generator import XmpSidecarGeneratorWidget
 
 ICON_PATH = Path('images/icon.ico')
 GITHUB_REPOSITORY_URL = 'https://github.com/jhc13/taggui'
@@ -82,7 +83,12 @@ class MainWindow(QMainWindow):
                                             self.image_list)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,
                            self.auto_captioner)
+        self.xmp_sidecar_generator = XmpSidecarGeneratorWidget(
+            parent=self, image_list_model=self.image_list_model)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,
+                           self.xmp_sidecar_generator)
         self.tabifyDockWidget(self.all_tags_editor, self.auto_captioner)
+        self.tabifyDockWidget(self.auto_captioner, self.xmp_sidecar_generator)
         self.all_tags_editor.raise_()
         # Set default widths for the dock widgets.
         # Temporarily set a size for the window so that the dock widgets can be
@@ -91,8 +97,8 @@ class MainWindow(QMainWindow):
         self.resize(image_list_image_width * 8,
                     int(image_list_image_width * 4.5))
         self.resizeDocks([self.image_list, self.image_tags_editor,
-                          self.all_tags_editor],
-                         [int(image_list_image_width * 2.5)] * 3,
+                          self.all_tags_editor, self.xmp_sidecar_generator],
+                         [int(image_list_image_width * 2.5)] * 4,
                          Qt.Orientation.Horizontal)
         # Disable some widgets until a directory is loaded.
         self.image_tags_editor.tag_input_box.setDisabled(True)
@@ -107,6 +113,8 @@ class MainWindow(QMainWindow):
         self.toggle_all_tags_editor_action = QAction('All Tags', parent=self)
         self.toggle_auto_captioner_action = QAction('Auto-Captioner',
                                                     parent=self)
+        self.toggle_xmp_sidecar_generator_action = QAction('XMP Sidecar Generator',
+                                                           parent=self)
         self.create_menus()
 
         self.image_list_selection_model = (self.image_list.list_view
@@ -117,6 +125,7 @@ class MainWindow(QMainWindow):
         self.connect_image_tags_editor_signals()
         self.connect_all_tags_editor_signals()
         self.connect_auto_captioner_signals()
+        self.connect_xmp_sidecar_generator_signals()
         # Forward any unhandled image changing key presses to the image list.
         key_press_forwarder = KeyPressForwarder(
             parent=self, target=self.image_list.list_view,
@@ -301,6 +310,7 @@ class MainWindow(QMainWindow):
         message_box.setText(text)
         message_box.exec()
 
+
     def create_menus(self):
         menu_bar = self.menuBar()
 
@@ -359,6 +369,7 @@ class MainWindow(QMainWindow):
         self.toggle_image_tags_editor_action.setCheckable(True)
         self.toggle_all_tags_editor_action.setCheckable(True)
         self.toggle_auto_captioner_action.setCheckable(True)
+        self.toggle_xmp_sidecar_generator_action.setCheckable(True)
         self.toggle_image_list_action.triggered.connect(
             lambda is_checked: self.image_list.setVisible(is_checked))
         self.toggle_image_tags_editor_action.triggered.connect(
@@ -367,10 +378,14 @@ class MainWindow(QMainWindow):
             lambda is_checked: self.all_tags_editor.setVisible(is_checked))
         self.toggle_auto_captioner_action.triggered.connect(
             lambda is_checked: self.auto_captioner.setVisible(is_checked))
+        self.toggle_xmp_sidecar_generator_action.triggered.connect(
+            lambda is_checked: self.xmp_sidecar_generator.setVisible(is_checked))
         view_menu.addAction(self.toggle_image_list_action)
         view_menu.addAction(self.toggle_image_tags_editor_action)
         view_menu.addAction(self.toggle_all_tags_editor_action)
         view_menu.addAction(self.toggle_auto_captioner_action)
+        view_menu.addAction(self.toggle_xmp_sidecar_generator_action)
+
 
         help_menu = menu_bar.addMenu('Help')
         open_github_repository_action = QAction('GitHub', parent=self)
@@ -554,6 +569,21 @@ class MainWindow(QMainWindow):
         self.auto_captioner.visibilityChanged.connect(
             lambda: self.toggle_auto_captioner_action.setChecked(
                 self.auto_captioner.isVisible()))
+        self.xmp_sidecar_generator.visibilityChanged.connect(
+            lambda: self.toggle_xmp_sidecar_generator_action.setChecked(
+                self.xmp_sidecar_generator.isVisible()))
+
+    def connect_xmp_sidecar_generator_signals(self):
+        """Connect signals for the XMP sidecar generator widget."""
+        # Update selected image indices when selection changes
+        self.image_list_selection_model.selectionChanged.connect(
+            self.update_xmp_selected_indices)
+    
+    @Slot()
+    def update_xmp_selected_indices(self):
+        """Update the selected image indices in the XMP sidecar generator."""
+        selected_indices = self.image_list.get_selected_image_indices()
+        self.xmp_sidecar_generator.set_selected_image_indices(selected_indices)
 
     def restore(self):
         # Restore the window geometry and state.

@@ -21,23 +21,8 @@ from utils.settings_widgets import (FocusedScrollSettingsComboBox,
                                     FocusedScrollSettingsSpinBox,
                                     SettingsBigCheckBox, SettingsLineEdit,
                                     SettingsPlainTextEdit)
-from utils.utils import pluralize
+from utils.utils import pluralize, set_text_edit_height
 from widgets.image_list import ImageList
-
-
-def set_text_edit_height(text_edit: QPlainTextEdit, line_count: int):
-    """
-    Set the height of a text edit to the height of a given number of lines.
-    """
-    # From https://stackoverflow.com/a/46997337.
-    document = text_edit.document()
-    font_metrics = QFontMetrics(document.defaultFont())
-    margins = text_edit.contentsMargins()
-    height = int(font_metrics.lineSpacing() * line_count
-                 + margins.top() + margins.bottom()
-                 + document.documentMargin() * 2
-                 + text_edit.frameWidth() * 2)
-    text_edit.setFixedHeight(height)
 
 
 class HorizontalLine(QFrame):

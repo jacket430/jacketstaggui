@@ -10,7 +10,7 @@ import exifread
 import imagesize
 from PySide6.QtCore import (QAbstractListModel, QModelIndex, QSize, Qt, Signal,
                             Slot)
-from PySide6.QtGui import QIcon, QImageReader, QPixmap
+from PySide6.QtGui import QIcon, QImageReader, QPainter, QPixmap
 from PySide6.QtWidgets import QMessageBox
 
 from utils.image import Image
@@ -85,6 +85,11 @@ class ImageListModel(QAbstractListModel):
             pixmap = QPixmap.fromImageReader(image_reader).scaledToWidth(
                 self.image_list_image_width,
                 Qt.TransformationMode.SmoothTransformation)
+            
+            # Add XMP overlay if XMP file exists
+            if image.has_xmp:
+                pixmap = self._add_xmp_overlay(pixmap)
+            
             thumbnail = QIcon(pixmap)
             image.thumbnail = thumbnail
             return thumbnail
@@ -156,7 +161,11 @@ class ImageListModel(QAbstractListModel):
                     tags = caption.split(self.tag_separator)
                     tags = [tag.strip() for tag in tags]
                     tags = [tag for tag in tags if tag]
-            image = Image(image_path, dimensions, tags)
+            # Check if XMP file exists
+            xmp_file_path = image_path.with_suffix('.xmp')
+            has_xmp = xmp_file_path.exists()
+            
+            image = Image(image_path, dimensions, tags, has_xmp=has_xmp)
             self.images.append(image)
         self.images.sort(key=lambda image_: image_.path)
         self.modelReset.emit()
@@ -464,6 +473,38 @@ class ImageListModel(QAbstractListModel):
         self.dataChanged.emit(image_index, image_index)
         self.write_image_tags_to_disk(image)
 
+    @Slot(Image)
+    def update_sidecar_status(self, image: Image):
+        """Update the sidecar status for a given image."""
+        try:
+            image_index = self.images.index(image)
+            image.has_xmp = True
+            image.thumbnail = None  # Invalidate thumbnail to redraw with overlay
+            model_index = self.index(image_index)
+            self.dataChanged.emit(model_index, model_index)
+        except ValueError:
+            # Image not found in the model, which can happen if the directory was reloaded
+            print(f"Could not find image {image.path.name} to update sidecar status.")
+
+    @Slot(list)
+    def update_sidecar_statuses(self, images: list[Image]):
+        """Update the sidecar status for a list of images."""
+        changed_indices = []
+        for image in images:
+            try:
+                image_index = self.images.index(image)
+                image.has_xmp = True
+                image.thumbnail = None  # Invalidate thumbnail to redraw with overlay
+                changed_indices.append(image_index)
+            except ValueError:
+                # Image not found in the model
+                print(f"Could not find image {image.path.name} to update sidecar status.")
+        
+        if changed_indices:
+            min_index = min(changed_indices)
+            max_index = max(changed_indices)
+            self.dataChanged.emit(self.index(min_index), self.index(max_index))
+
     @Slot(list, list)
     def add_tags(self, tags: list[str], image_indices: list[QModelIndex]):
         """Add one or more tags to one or more images."""
@@ -539,3 +580,22 @@ class ImageListModel(QAbstractListModel):
         if changed_image_indices:
             self.dataChanged.emit(self.index(changed_image_indices[0]),
                                   self.index(changed_image_indices[-1]))
+
+    def _add_xmp_overlay(self, pixmap: QPixmap) -> QPixmap:
+        """Add a small XMP indicator overlay to the bottom right corner of the pixmap."""
+        overlay_pixmap = QPixmap(pixmap)
+
+        painter = QPainter(overlay_pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        overlay_size = 16
+        margin = 4
+        x = pixmap.width() - overlay_size - margin
+        y = pixmap.height() - overlay_size - margin
+        painter.setPen(Qt.GlobalColor.black)
+        font = painter.font()
+        font.setPixelSize(overlay_size)
+        painter.setFont(font)
+        painter.drawText(x, y, overlay_size, overlay_size, 
+                       Qt.AlignmentFlag.AlignCenter, "💾")
+        painter.end()
+        return overlay_pixmap

@@ -10,8 +10,8 @@ from PySide6.QtCore import (QFile, QItemSelection, QItemSelectionModel,
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QDockWidget,
                                QFileDialog, QHBoxLayout, QLabel, QLineEdit,
-                               QListView, QMenu, QMessageBox, QVBoxLayout,
-                               QWidget)
+                               QListView, QMenu, QMessageBox, QPushButton,
+                               QVBoxLayout, QWidget)
 from pyparsing import (CaselessKeyword, CaselessLiteral, Group, OpAssoc,
                        ParseException, QuotedString, Suppress, Word,
                        infix_notation, nums, one_of, printables)
@@ -353,6 +353,11 @@ class ImageList(QDockWidget):
         selection_mode_layout.addWidget(selection_mode_label)
         selection_mode_layout.addWidget(self.selection_mode_combo_box,
                                         stretch=1)
+        
+        # Add button to select images without captions
+        self.select_uncaptioned_button = QPushButton('Untagged')
+        self.select_uncaptioned_button.clicked.connect(self.select_uncaptioned_images)
+        selection_mode_layout.addWidget(self.select_uncaptioned_button)
         self.list_view = ImageListView(self, proxy_image_list_model,
                                        tag_separator, image_width)
         self.image_index_label = QLabel()
@@ -427,3 +432,32 @@ class ImageList(QDockWidget):
 
     def get_selected_image_indices(self) -> list[QModelIndex]:
         return self.list_view.get_selected_image_indices()
+
+    @Slot()
+    def select_uncaptioned_images(self):
+        """Select all images that have no captions (empty tags list)."""
+        uncaptioned_proxy_indices = []
+        for proxy_row in range(self.proxy_image_list_model.rowCount()):
+            image: Image = self.proxy_image_list_model.data(
+                self.proxy_image_list_model.index(proxy_row, 0),
+                Qt.ItemDataRole.UserRole)
+            if not image.tags:  # Empty tags list means no captions
+                uncaptioned_proxy_indices.append(proxy_row)
+        
+        if not uncaptioned_proxy_indices:
+            return
+        
+        # Clear current selection and select uncaptioned images
+        self.list_view.clearSelection()
+        item_selection = QItemSelection()
+        for proxy_row in uncaptioned_proxy_indices:
+            item_selection.append(
+                QItemSelectionRange(self.proxy_image_list_model.index(proxy_row, 0)))
+        
+        # Set the first uncaptioned image as current
+        if uncaptioned_proxy_indices:
+            self.list_view.setCurrentIndex(
+                self.proxy_image_list_model.index(uncaptioned_proxy_indices[0], 0))
+        
+        self.list_view.selectionModel().select(
+            item_selection, QItemSelectionModel.SelectionFlag.ClearAndSelect)

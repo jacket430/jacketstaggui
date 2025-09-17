@@ -10,3 +10,4 @@ class Image:
     dimensions: tuple[int, int] | None
     tags: list[str] = field(default_factory=list)
     thumbnail: QIcon | None = None
+    has_xmp: bool = False
